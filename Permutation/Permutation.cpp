@@ -62,6 +62,8 @@ unsigned int CountPermutation(unsigned int N)
 
 int main()
 {
+	std::cout << " ::: PERMUTATION ::: " << std::endl;
+
 	auto start = GetTickCount64();
 
 	unsigned int N = 300;

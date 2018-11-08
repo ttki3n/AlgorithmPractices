@@ -3,6 +3,8 @@
 
 int main()
 {
+	std::cout << " ::: HELLO WORLD ::: " << std::endl;
+
 	auto start = GetTickCount64();
 
 
