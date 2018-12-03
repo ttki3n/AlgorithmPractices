@@ -2,15 +2,16 @@
 #include <Windows.h>
 #include <fstream>
 #include <vector>
+#include <queue>
+#include <string>
 
-int t1, t2;
 struct Point
 {	
 	Point(unsigned int _x, unsigned int _y) : x(_x), y(_y) {}
 	unsigned int x, y;
 };
 
-int CheckNextMoveAt(int x , int y, unsigned int prevMinSteps, std::vector<Point>& _tmpNextMoves, unsigned int m, unsigned int n, unsigned int**  jungle, unsigned int** minSteps)
+int CheckNextMoveAt(int x, int y, unsigned int prevMinSteps, std::queue<Point>& _tmpNextMoves, unsigned int m, unsigned int n, unsigned int**  jungle, unsigned int** minSteps, Point& honey)
 {
 	if (x < 0 || y < 0 || x >= m || y >= n)
 	{
@@ -25,25 +26,26 @@ int CheckNextMoveAt(int x , int y, unsigned int prevMinSteps, std::vector<Point>
 
 	if (jungle[x][y] == 1)
 	{
+		jungle[x][y] = 10;
 		if (minSteps[x][y] == -1)
 		{
 			minSteps[x][y] = prevMinSteps + 1;
-			_tmpNextMoves.push_back(Point(x, y));
+			_tmpNextMoves.emplace(Point(x, y));
 		}
 		else
 		{
-			if (minSteps[x][y] >= prevMinSteps + 1)
+			if (minSteps[x][y] > prevMinSteps + 1)
 			{
 				minSteps[x][y] = prevMinSteps + 1;
-				_tmpNextMoves.push_back(Point(x, y));
-			}
+				_tmpNextMoves.emplace(Point(x, y));
+			}			
 		}
 	}
 
 	if (jungle[x][y] == 4)
 	{
-		t1 = x;
-		t2 = y;
+		honey.x = x;
+		honey.y = y;
 		if (minSteps[x][y] == -1)
 		{
 			minSteps[x][y] = prevMinSteps + 1;
@@ -81,7 +83,8 @@ int FindMinSteps(unsigned int m, unsigned int n, unsigned int **jungle)
 
 	std::cout << " a = " << a << " b = " << b << std::endl;
 
-	// min steps array
+	// min steps array : store the min steps to reach that point	
+
 	unsigned int ** minSteps;
 	minSteps = new unsigned int*[m];
 	for (size_t i = 0; i < m; i++)
@@ -93,25 +96,29 @@ int FindMinSteps(unsigned int m, unsigned int n, unsigned int **jungle)
 		}
 	}
 
-	std::vector<Point> nextMoves;
-	nextMoves.push_back(Point(a, b));
-	
+	std::queue<Point> nextMoves;
+	nextMoves.emplace(Point(a, b));
+	Point honey(-1, -1);
+
 	while(!nextMoves.empty())
 	{
-		std::vector<Point> _tmpNextMoves;
-		for (auto point : nextMoves)
+		Point point = nextMoves.front();
+		nextMoves.pop();	
+		
+		unsigned int x = point.x;
+		unsigned int y = point.y;
+		CheckNextMoveAt(x - 1, y, minSteps[x][y], nextMoves, m, n, jungle, minSteps, honey);
+		CheckNextMoveAt(x + 1, y, minSteps[x][y], nextMoves, m, n, jungle, minSteps, honey);
+		CheckNextMoveAt(x , y - 1, minSteps[x][y], nextMoves, m, n, jungle, minSteps, honey);
+		CheckNextMoveAt(x , y + 1, minSteps[x][y], nextMoves, m, n, jungle, minSteps, honey);
+		
+		if (honey.x != -1)
 		{
-			unsigned int x = point.x;
-			unsigned int y = point.y;
-			CheckNextMoveAt(x - 1, y, minSteps[x][y], _tmpNextMoves, m, n, jungle, minSteps);
-			CheckNextMoveAt(x + 1, y, minSteps[x][y], _tmpNextMoves, m, n, jungle, minSteps);
-			CheckNextMoveAt(x , y - 1, minSteps[x][y], _tmpNextMoves, m, n, jungle, minSteps);
-			CheckNextMoveAt(x , y + 1, minSteps[x][y], _tmpNextMoves, m, n, jungle, minSteps);
+			return minSteps[honey.x][honey.y];
 		}
-		std::swap(_tmpNextMoves, nextMoves);
 	}
-
-	return minSteps[t1][t2];
+	
+	return -1;
 }
 
 void ReadInput(std::string path, unsigned int &m, unsigned int &n, unsigned int** &jungle)
@@ -137,25 +144,48 @@ void ReadInput(std::string path, unsigned int &m, unsigned int &n, unsigned int*
 	}
 }
 
+void WriteOutput(std::string path, std::string s)
+{
+	std::fstream out;
+	out.open(path, std::ios::out);
+	if (out.is_open())
+	{
+		out << s << "\n";
+	}
+	else
+		std::cout << "Cannot write output" << std::endl;
+
+	out.close();
+}
+
 int main()
 {
 	std::cout << " ::: PATH TO HONEY ::: " << std::endl;
-	auto start = GetTickCount64();
-	// input
-	std::string _INP_PATH = "INPUT.txt";
-	std::string _OUT_PATH = "OUTPUT.txt";
+	int numberTestCases = 10;
 
-	unsigned int m, n;
-	unsigned int **jungle = nullptr;
-	unsigned int max_s = 0;
-	ReadInput(_INP_PATH, m, n, jungle);
-	
-	int steps = FindMinSteps(m, n, jungle);
+	for (int i = 1; i <= numberTestCases; i++)
+	{
+		auto start = GetTickCount64();
+		// input
+		std::string _INP_PATH = "INP.txt";
+		std::string _OUT_PATH = "OUT_1.txt";
+		std::string testCasePath = "TestCases";
+		testCasePath += "/" + std::to_string(i) + "/";
 
-	auto end = GetTickCount64();
-	std::cout << " Min steps :: " << steps << std::endl;
-	std::cout << " Execution time :: " << end - start << std::endl;
+		unsigned int m, n;
+		unsigned int **jungle = nullptr;
+		unsigned int max_s = 0;
+		ReadInput(testCasePath + _INP_PATH, m, n, jungle);
 
+		int steps = FindMinSteps(m, n, jungle);
+
+		auto end = GetTickCount64();
+		std::string output = std::to_string(end - start) + " ms" + "\n" + std::to_string(steps);
+		WriteOutput(testCasePath + _OUT_PATH, output);
+		std::cout << " Min steps :: " << steps << std::endl;
+		std::cout << " Execution time :: " << end - start << std::endl;
+
+	}
 	int _lastPause;
 	std::cin >> _lastPause;
 
