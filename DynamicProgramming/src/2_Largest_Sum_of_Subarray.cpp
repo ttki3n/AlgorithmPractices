@@ -12,12 +12,58 @@
 #include <string>
 #include <fstream>
 
-void SolveProblem(unsigned int N, unsigned int K, unsigned int* numbers, unsigned int &result)
+
+void SolveProblem_1(unsigned int N, unsigned int K, int* numbers, int &result)
 {
-	
+	int *M = new int[N];	
+	for (int i = 1; i < N; i++)
+	{
+		M[i] = max(numbers[i], M[i - 1] + numbers[i]);
+	}
+
+	int sumK = 0;
+	for (int i = 0; i < K; i++)
+	{
+		sumK += numbers[i];
+	}
+
+	int r = sumK;
+	for (int i = K; i < N; i++)
+	{
+		sumK = sumK - numbers[i - K] + numbers[i];
+		int maxK = max(sumK, sumK + M[i - K]);
+		r = max(r, maxK);
+	}
+
+	result = r;		
 }
 
-void ReadInput(std::string path, unsigned int &N, unsigned int &K, unsigned int* &numbers)
+void SolveProblem_2(unsigned int N, unsigned int K, int* numbers, int &result)
+{
+	int sumK = 0; // sum of K elements subarray
+	for (int i = 0; i < K; i++)
+	{
+		sumK += numbers[i];
+	}
+
+	int maxSum = sumK; // max sum [i] : the maximum sum of at least K elements subarray which end at [i]
+	int best = maxSum;
+	for (int i = K; i < N; i++)
+	{
+		sumK = sumK - numbers[i - K] + numbers[i];
+		maxSum = max(maxSum + numbers[i], sumK);
+		best = max(best, maxSum);
+	}
+	result = best;
+}
+
+void SolveProblem(unsigned int N, unsigned int K, int* numbers, int &result)
+{
+	SolveProblem_1(N, K, numbers, result);
+	//SolveProblem_2(N, K, numbers, result);
+}
+
+void ReadInput(std::string path, unsigned int &N, unsigned int &K, int* &numbers)
 {
 	std::fstream inp;
 	inp.open(path, std::ios::in);
@@ -25,7 +71,7 @@ void ReadInput(std::string path, unsigned int &N, unsigned int &K, unsigned int*
 	{
 		inp >> N;
 		inp >> K;
-		numbers = new unsigned int[N];
+		numbers = new int[N];
 		for (size_t i = 0; i < N; i++)
 		{			
 			inp >> numbers[i];
@@ -68,18 +114,17 @@ int main()
 		testCasePath += "/" + std::to_string(i) + "/";
 
 		unsigned int N, K;
-		unsigned int *numbers = nullptr;
+		int *numbers = nullptr;
 		
 		ReadInput(testCasePath + _INP_PATH, N, K, numbers);
 
-		unsigned int result;
+		int result;
 		SolveProblem(N, K, numbers, result);
 
 		auto end = GetTickCount64();		
 		
+		std::cout << "Result :: " << result << std::endl;
 		std::string executedTime = " ms = " + std::to_string(end - start);		
-
-		std::cout << " Min coins :: " << result << std::endl;
 		std::cout << " Execution time :: " << executedTime << std::endl;
 
 		std::fstream out;
